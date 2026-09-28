@@ -1,0 +1,14 @@
+%% User journey — Enterprise Knowledge Agent (user manual)
+%% Editable source mirrored in docs/user-manual.md.
+flowchart LR
+    A["Open the app<br/>(no login)"] --> B["Create an<br/>application"]
+    B --> C["Upload<br/>knowledge files"]
+    C --> D["Wait for<br/>Ready status"]
+    D --> E["Create and<br/>configure an agent"]
+    E --> F{"Run or chat?"}
+    F -->|Run| G["Submit a run<br/>with a request"]
+    F -->|Chat| H["Ask in a<br/>conversation"]
+    G --> I["Review output<br/>+ citations"]
+    H --> I
+
+    style F fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px

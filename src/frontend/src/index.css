@@ -1,0 +1,326 @@
+/*
+ * TASK-UX-01 (Module 37): semantic design tokens + dark-first Tailwind
+ * theme. All components must consume these tokens (via Tailwind utilities
+ * they generate, e.g. `bg-background`, `text-text-primary`,
+ * `rounded-card`) - never hard-coded hex values.
+ *
+ * Tokens are plain CSS custom properties on `:root` (dark palette, the
+ * default) and `:root[data-theme='light']` (light override), so a theme
+ * switch is just changing the `data-theme` attribute on <html> - see
+ * ThemeProvider. The `@theme inline` block below maps those custom
+ * properties into Tailwind v4's theme so utility classes are generated for
+ * them and stay in sync with the live CSS variable (not baked in at build
+ * time).
+ */
+
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+:root {
+  color-scheme: dark;
+
+  /* Dark palette (default): deep neutral graphite/blue-black background,
+     one restrained indigo accent; status colors never used alone (icon +
+     text required alongside them elsewhere in the UI, see TASK-UX-09). */
+  --background: #0b0d12;
+  --surface: #12151c;
+  --surface-raised: #171b24;
+  --surface-hover: #1e232e;
+  --border: #262c38;
+  --border-strong: #38404f;
+  --text-primary: #f4f6fb;
+  --text-secondary: #b8c0d0;
+  --text-muted: #7c8698;
+  --accent: #6366f1;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #f43f5e;
+  --processing: #22d3ee;
+
+  /* Secondary accent used only for subtle multi-stop gradients / glows. */
+  --accent-2: #8b5cf6;
+
+  /* Premium elevation values (dark canvas: soft, deep shadows). */
+  --elevation-card: 0 1px 2px -1px rgb(0 0 0 / 0.45), 0 2px 6px -2px rgb(0 0 0 / 0.3);
+  --elevation-elevated: 0 10px 30px -12px rgb(0 0 0 / 0.55), 0 3px 8px -4px rgb(0 0 0 / 0.4);
+  --elevation-pop: 0 18px 48px -16px rgb(0 0 0 / 0.6), 0 6px 16px -8px rgb(0 0 0 / 0.45);
+  --elevation-glow: 0 0 0 1px color-mix(in oklab, var(--accent) 40%, transparent),
+    0 12px 36px -10px color-mix(in oklab, var(--accent) 45%, transparent);
+  /* Radius scale: 8-12px controls, 12-16px cards, 16-20px drawers/modals. */
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-overlay: 18px;
+
+  /* Typography: Inter (interface) + JetBrains Mono (prompt/Markdown source),
+     self-hosted via @fontsource-variable (no external font-CDN requests). */
+  --font-sans: 'Inter Variable', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --background: #f7f8fb;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-hover: #eef0f5;
+  --border: #dde1e8;
+  --border-strong: #c3c9d4;
+  --text-primary: #10131a;
+  --text-secondary: #454c5a;
+  --text-muted: #6b7280;
+  --accent: #4f46e5;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #e11d48;
+  --processing: #0891b2;
+  --accent-2: #7c3aed;
+
+  --elevation-card: 0 1px 2px -1px rgb(16 19 26 / 0.08), 0 2px 8px -3px rgb(16 19 26 / 0.08);
+  --elevation-elevated: 0 12px 32px -14px rgb(16 19 26 / 0.16), 0 3px 10px -4px rgb(16 19 26 / 0.1);
+  --elevation-pop: 0 20px 50px -18px rgb(16 19 26 / 0.22), 0 8px 20px -10px rgb(16 19 26 / 0.12);
+  --elevation-glow: 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent),
+    0 14px 38px -12px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+
+/* Respect the OS preference until the user picks an explicit theme
+   (ThemeProvider only sets data-theme once a preference is stored). */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+
+    --background: #f7f8fb;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --surface-hover: #eef0f5;
+    --border: #dde1e8;
+    --border-strong: #c3c9d4;
+    --text-primary: #10131a;
+    --text-secondary: #454c5a;
+    --text-muted: #6b7280;
+    --accent: #4f46e5;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #e11d48;
+    --processing: #0891b2;
+    --accent-2: #7c3aed;
+
+    --elevation-card: 0 1px 2px -1px rgb(16 19 26 / 0.08), 0 2px 8px -3px rgb(16 19 26 / 0.08);
+    --elevation-elevated: 0 12px 32px -14px rgb(16 19 26 / 0.16),
+      0 3px 10px -4px rgb(16 19 26 / 0.1);
+    --elevation-pop: 0 20px 50px -18px rgb(16 19 26 / 0.22), 0 8px 20px -10px rgb(16 19 26 / 0.12);
+    --elevation-glow: 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent),
+      0 14px 38px -12px color-mix(in oklab, var(--accent) 30%, transparent);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-processing: var(--processing);
+  --color-accent-2: var(--accent-2);
+
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-overlay: var(--radius-overlay);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /*
+   * TASK-UX-02: shadcn/ui + Radix primitives expect a conventional set of
+   * CSS-var-backed color/radius roles (background, foreground, card,
+   * popover, primary, secondary, muted, accent, destructive, border, input,
+   * ring). These are aliases onto our OWN canonical UX-01 tokens above -
+   * never a second, competing palette. Note shadcn's own "accent" role
+   * means something different from our brand `--color-accent` (indigo):
+   * shadcn's `accent`/`accent-foreground` is a subtle hover/highlight
+   * surface (menu items, tabs, etc.), so it is intentionally aliased to
+   * `surface-hover`/`text-primary`, not to our brand accent. Our brand
+   * accent stays available as `bg-accent`/`text-accent` and is reused here
+   * only for `primary`/`ring` (buttons, links, focus rings).
+   */
+  --color-foreground: var(--text-primary);
+  --color-card: var(--surface-raised);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--surface-raised);
+  --color-popover-foreground: var(--text-primary);
+  --color-primary: var(--accent);
+  --color-primary-foreground: #f8fafc;
+  --color-secondary: var(--surface-hover);
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted: var(--surface-hover);
+  --color-muted-foreground: var(--text-muted);
+  --color-shadcn-accent: var(--surface-hover);
+  --color-shadcn-accent-foreground: var(--text-primary);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: #f8fafc;
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+
+  /* shadcn's calc-derived sm/md/lg/xl radius scale, reusing our UX-01
+     radius tokens directly (chosen so the alignment is exact - see
+     TASK-UX-02 implementation notes). */
+  --radius-sm: var(--radius-control);
+  --radius-md: 12px;
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-overlay);
+
+  /*
+   * Premium elevation + glow scale (redesign). These generate `shadow-card`,
+   * `shadow-elevated`, `shadow-pop`, `shadow-glow` utilities, each mapped to a
+   * raw `--elevation-*` custom property so they swap with the light/dark theme
+   * exactly like the color tokens above. `shadow-glow` uses the brand accent.
+   */
+  --shadow-card: var(--elevation-card);
+  --shadow-elevated: var(--elevation-elevated);
+  --shadow-pop: var(--elevation-pop);
+  --shadow-glow: var(--elevation-glow);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code,
+  pre,
+  kbd {
+    font-family: var(--font-mono);
+  }
+}
+
+/*
+ * TASK-UX-03 (Module 37): CSS-level reduced-motion fallback. Motion-driven
+ * animations already respect `prefers-reduced-motion` automatically via
+ * `MotionConfig reducedMotion="user"` (see app/motion/MotionProvider.tsx);
+ * this covers everything else - plain CSS transitions/animations such as
+ * the `transition-colors`/`transition-opacity` Tailwind utilities used for
+ * hover/focus states across the shadcn-style primitives. State changes
+ * still apply instantly; only the animated transition between states is
+ * removed, per WCAG 2.3.3.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Premium surface + backdrop utilities (redesign). These express effects that
+ * are awkward as raw Tailwind utilities: the ambient app backdrop glow, the
+ * subtle top-sheen on elevated cards, gradient hairline borders, and the
+ * connector line used by the workflow pipeline. All consume the semantic
+ * tokens above so they stay theme-correct.
+ */
+@layer components {
+  /* Ambient backdrop: two faint brand-tinted radial glows behind page content
+     so the near-black canvas feels lit rather than flat. Pointer-safe. */
+  .app-backdrop {
+    position: relative;
+    background:
+      radial-gradient(
+        60rem 60rem at 15% -10%,
+        color-mix(in oklab, var(--accent) 12%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(
+        50rem 50rem at 100% 0%,
+        color-mix(in oklab, var(--accent-2) 10%, transparent),
+        transparent 55%
+      );
+  }
+
+  /* Elevated "glass" card: gradient hairline border + soft top sheen. Pair
+     with `shadow-elevated` on the element. */
+  .surface-panel {
+    position: relative;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--surface-raised) 92%, var(--text-primary) 4%),
+        var(--surface) 60%
+      );
+    border: 1px solid var(--border);
+  }
+  .surface-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--text-primary) 10%, transparent),
+      transparent 40%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Tinted "chip" behind an icon; tone set via --chip-color inline. */
+  .icon-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-control);
+    background: color-mix(in oklab, var(--chip-color, var(--accent)) 16%, transparent);
+    color: var(--chip-color, var(--accent));
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--chip-color, var(--accent)) 30%, transparent);
+  }
+
+  /* Gradient brand text for hero numerals / emphasis. */
+  .text-gradient-brand {
+    background: linear-gradient(120deg, var(--text-primary), color-mix(in oklab, var(--accent) 70%, var(--text-primary)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Interactive lift for clickable cards. Respects reduced motion via the
+     global override above (transition duration is neutralized). */
+  .lift {
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      border-color 160ms ease;
+  }
+  .lift:hover {
+    transform: translateY(-2px);
+  }
+}
+

@@ -1,0 +1,21 @@
+%% Agent run status + stage lifecycle — Enterprise Knowledge Agent (user manual)
+%% Editable source mirrored in docs/user-manual.md.
+stateDiagram-v2
+    [*] --> Queued: run submitted
+    Queued --> Running: worker claims run
+    state Running {
+        [*] --> Preparing
+        Preparing --> Retrieving
+        Retrieving --> BuildingContext: Building context
+        BuildingContext --> Generating
+        Generating --> Validating
+        Validating --> Saving
+        Saving --> [*]
+    }
+    Running --> Completed: output saved
+    Running --> Failed: error (e.g. RetrievalEmpty)
+    Queued --> Cancelled: Cancel
+    Running --> Cancelled: Cancel
+    Failed --> Queued: Retry
+    Completed --> [*]
+    Cancelled --> [*]

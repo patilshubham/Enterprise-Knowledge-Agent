@@ -1,0 +1,22 @@
+%% Compose service topology — Enterprise Knowledge Agent
+%% Editable source mirrored in README.md. Only the frontend and api publish
+%% host ports by default; postgres/localstack host ports are diagnostics-only.
+flowchart TD
+    subgraph Host["Host (Docker Compose, network eka-network)"]
+        FE["frontend<br/>eka-frontend:local<br/>host 8080 → 8080"]
+        API["api<br/>eka-api:local<br/>host 8081 → 8080"]
+        DOC["document-worker<br/>eka-document-worker:local"]
+        AGT["agent-worker<br/>eka-agent-worker:local"]
+        PG[("postgres<br/>pgvector/pgvector:pg16<br/>vol eka-postgres-data")]
+        LS[("localstack<br/>localstack:3 (S3+SQS)<br/>vol eka-localstack-data")]
+    end
+
+    FE -->|proxy /api, /hubs, /health| API
+    API --> PG
+    API --> LS
+    DOC --> PG
+    DOC --> LS
+    AGT --> PG
+    AGT --> LS
+
+    style Host fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px

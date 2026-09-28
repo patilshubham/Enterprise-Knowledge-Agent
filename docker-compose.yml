@@ -1,0 +1,228 @@
+# Base Compose topology for all six services (ASDD §5.1, §6).
+# Full environment-variable/secret contract is finalized in TASK-FND-07;
+# this file wires only what's needed to bring the stack up and healthy.
+#
+#   docker compose up -d                        # core stack only
+#   docker compose --profile diagnostics up -d   # + host access to Postgres/LocalStack
+
+name: enterprise-knowledge-agent
+
+networks:
+  eka-network:
+    name: eka-network
+    driver: bridge
+
+volumes:
+  postgres-data:
+    name: eka-postgres-data
+  localstack-data:
+    name: eka-localstack-data
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    networks:
+      - eka-network
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-eka}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eka-local-dev-password}
+      POSTGRES_DB: ${POSTGRES_DB:-enterprise_knowledge_agent}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eka} -d ${POSTGRES_DB:-enterprise_knowledge_agent}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  localstack:
+    image: localstack/localstack:3
+    restart: unless-stopped
+    networks:
+      - eka-network
+    environment:
+      SERVICES: s3,sqs
+      DEBUG: ${LOCALSTACK_DEBUG:-0}
+      PERSISTENCE: 1
+      # Consumed by deploy/localstack/init/10-create-buckets-and-queues.sh
+      # (TASK-FND-08) so app config (.env) and the init script never drift.
+      S3_SOURCE_FILES_BUCKET: ${S3_SOURCE_FILES_BUCKET:-rag-source-files}
+      S3_GENERATED_EXPORTS_BUCKET: ${S3_GENERATED_EXPORTS_BUCKET:-rag-generated-exports}
+      SQS_DOCUMENT_PROCESSING_QUEUE: ${SQS_DOCUMENT_PROCESSING_QUEUE:-document-processing}
+      SQS_AGENT_EXECUTION_QUEUE: ${SQS_AGENT_EXECUTION_QUEUE:-agent-execution}
+      SQS_DELETION_JOBS_QUEUE: ${SQS_DELETION_JOBS_QUEUE:-deletion-jobs}
+    volumes:
+      - ./deploy/localstack/init:/etc/localstack/init/ready.d:ro
+      - localstack-data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: src/api/Dockerfile
+    image: eka-api:local
+    restart: unless-stopped
+    networks:
+      - eka-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-enterprise_knowledge_agent};Username=${POSTGRES_USER:-eka};Password=${POSTGRES_PASSWORD:-eka-local-dev-password}
+      # TASK-S3-01/SQS-01: LocalStack S3/SQS connection + resource names (module 7/8/9).
+      Aws__ServiceUrl: ${LOCALSTACK_ENDPOINT:-http://localstack:4566}
+      Aws__Region: ${AWS_REGION:-us-east-1}
+      Aws__AccessKey: ${AWS_ACCESS_KEY_ID:-test}
+      Aws__SecretKey: ${AWS_SECRET_ACCESS_KEY:-test}
+      S3__SourceBucket: ${S3_SOURCE_FILES_BUCKET:-rag-source-files}
+      Sqs__DocumentProcessingQueue: ${SQS_DOCUMENT_PROCESSING_QUEUE:-document-processing}
+      Sqs__AgentExecutionQueue: ${SQS_AGENT_EXECUTION_QUEUE:-agent-execution}
+      Sqs__DeletionJobsQueue: ${SQS_DELETION_JOBS_QUEUE:-deletion-jobs}
+      # MODULE 12 - Azure OpenAI (TASK-AOI-01). Fallback defaults are
+      # syntactically valid but non-functional placeholders so the stack
+      # still starts without a real .env - AoiOptionsValidator only checks
+      # config *shape*; actual unreachability surfaces at call time
+      # (Configuration/DependencyUnavailable, TASK-AOI-03) rather than at
+      # startup.
+      AzureOpenAI__Endpoint: ${AZURE_OPENAI_ENDPOINT:-https://placeholder.openai.azure.com/}
+      AzureOpenAI__AuthMode: ${AZURE_OPENAI_AUTH_MODE:-entra}
+      AzureOpenAI__ApiKey: ${AZURE_OPENAI_API_KEY:-}
+      AzureOpenAI__ChatDeployment: ${AZURE_OPENAI_CHAT_DEPLOYMENT:-gpt-4o}
+      AzureOpenAI__EmbeddingDeployment: ${AZURE_OPENAI_EMBEDDING_DEPLOYMENT:-text-embedding-3-small}
+      AzureOpenAI__EmbeddingDimensions: ${AZURE_OPENAI_EMBEDDING_DIMENSIONS:-1536}
+      AzureOpenAI__MaxContextTokens: ${AZURE_OPENAI_MAX_CONTEXT_TOKENS:-128000}
+      AzureOpenAI__MaxOutputTokens: ${AZURE_OPENAI_MAX_OUTPUT_TOKENS:-4096}
+      AzureOpenAI__RequestTimeoutSeconds: ${AZURE_OPENAI_REQUEST_TIMEOUT_SECONDS:-60}
+      AzureOpenAI__MaxRetries: ${AZURE_OPENAI_MAX_RETRIES:-3}
+      AzureOpenAI__ChatDeploymentSupportsTemperature: ${AZURE_OPENAI_CHAT_SUPPORTS_TEMPERATURE:-true}
+      AzureOpenAI__ChatDeploymentSupportsMaxTokens: ${AZURE_OPENAI_CHAT_SUPPORTS_MAX_TOKENS:-true}
+      # TASK-SIG-01: the Api process publishes in-process (HubContextRealtimeEventPublisher)
+      # and only needs InternalToken, to validate the internal publish endpoint's shared secret.
+      Realtime__InternalToken: ${REALTIME_INTERNAL_TOKEN:-eka-realtime-local-dev-secret}
+    ports:
+      - "${API_HTTP_PORT:-8081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  document-worker:
+    build:
+      context: .
+      dockerfile: src/document-worker/Dockerfile
+    image: eka-document-worker:local
+    restart: on-failure
+    networks:
+      - eka-network
+    environment:
+      DOTNET_ENVIRONMENT: ${DOTNET_ENVIRONMENT:-Development}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-enterprise_knowledge_agent};Username=${POSTGRES_USER:-eka};Password=${POSTGRES_PASSWORD:-eka-local-dev-password}
+      Aws__ServiceUrl: ${LOCALSTACK_ENDPOINT:-http://localstack:4566}
+      Aws__Region: ${AWS_REGION:-us-east-1}
+      Aws__AccessKey: ${AWS_ACCESS_KEY_ID:-test}
+      Aws__SecretKey: ${AWS_SECRET_ACCESS_KEY:-test}
+      S3__SourceBucket: ${S3_SOURCE_FILES_BUCKET:-rag-source-files}
+      Sqs__DocumentProcessingQueue: ${SQS_DOCUMENT_PROCESSING_QUEUE:-document-processing}
+      Sqs__AgentExecutionQueue: ${SQS_AGENT_EXECUTION_QUEUE:-agent-execution}
+      Sqs__DeletionJobsQueue: ${SQS_DELETION_JOBS_QUEUE:-deletion-jobs}
+      # MODULE 12/13 - Azure OpenAI + embedding batching (TASK-AOI-01, TASK-EMB-01).
+      AzureOpenAI__Endpoint: ${AZURE_OPENAI_ENDPOINT:-https://placeholder.openai.azure.com/}
+      AzureOpenAI__AuthMode: ${AZURE_OPENAI_AUTH_MODE:-entra}
+      AzureOpenAI__ApiKey: ${AZURE_OPENAI_API_KEY:-}
+      AzureOpenAI__ChatDeployment: ${AZURE_OPENAI_CHAT_DEPLOYMENT:-gpt-4o}
+      AzureOpenAI__EmbeddingDeployment: ${AZURE_OPENAI_EMBEDDING_DEPLOYMENT:-text-embedding-3-small}
+      AzureOpenAI__EmbeddingDimensions: ${AZURE_OPENAI_EMBEDDING_DIMENSIONS:-1536}
+      AzureOpenAI__MaxContextTokens: ${AZURE_OPENAI_MAX_CONTEXT_TOKENS:-128000}
+      AzureOpenAI__MaxOutputTokens: ${AZURE_OPENAI_MAX_OUTPUT_TOKENS:-4096}
+      AzureOpenAI__RequestTimeoutSeconds: ${AZURE_OPENAI_REQUEST_TIMEOUT_SECONDS:-60}
+      AzureOpenAI__MaxRetries: ${AZURE_OPENAI_MAX_RETRIES:-3}
+      AzureOpenAI__ChatDeploymentSupportsTemperature: ${AZURE_OPENAI_CHAT_SUPPORTS_TEMPERATURE:-true}
+      AzureOpenAI__ChatDeploymentSupportsMaxTokens: ${AZURE_OPENAI_CHAT_SUPPORTS_MAX_TOKENS:-true}
+      Embedding__MaxInputsPerBatch: ${EMBEDDING_MAX_INPUTS_PER_BATCH:-16}
+      Embedding__MaxTokensPerBatch: ${EMBEDDING_MAX_TOKENS_PER_BATCH:-8000}
+      Embedding__MaxConcurrentBatches: ${EMBEDDING_MAX_CONCURRENT_BATCHES:-4}
+      # TASK-SIG-03/04: this is a separate OS process from the Api - it relays
+      # events over HTTP to the Api's internal publish endpoint (see
+      # HttpRealtimeEventPublisher). ApiBaseUrl uses the Docker-internal
+      # service DNS name/port (8080), NOT the host-published API_HTTP_PORT.
+      Realtime__ApiBaseUrl: ${REALTIME_API_BASE_URL:-http://api:8080}
+      Realtime__InternalToken: ${REALTIME_INTERNAL_TOKEN:-eka-realtime-local-dev-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
+  agent-worker:
+    build:
+      context: .
+      dockerfile: src/agent-worker/Dockerfile
+    image: eka-agent-worker:local
+    restart: on-failure
+    networks:
+      - eka-network
+    environment:
+      DOTNET_ENVIRONMENT: ${DOTNET_ENVIRONMENT:-Development}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-enterprise_knowledge_agent};Username=${POSTGRES_USER:-eka};Password=${POSTGRES_PASSWORD:-eka-local-dev-password}
+      Aws__ServiceUrl: ${LOCALSTACK_ENDPOINT:-http://localstack:4566}
+      Aws__Region: ${AWS_REGION:-us-east-1}
+      Aws__AccessKey: ${AWS_ACCESS_KEY_ID:-test}
+      Aws__SecretKey: ${AWS_SECRET_ACCESS_KEY:-test}
+      S3__SourceBucket: ${S3_SOURCE_FILES_BUCKET:-rag-source-files}
+      Sqs__DocumentProcessingQueue: ${SQS_DOCUMENT_PROCESSING_QUEUE:-document-processing}
+      Sqs__AgentExecutionQueue: ${SQS_AGENT_EXECUTION_QUEUE:-agent-execution}
+      Sqs__DeletionJobsQueue: ${SQS_DELETION_JOBS_QUEUE:-deletion-jobs}
+      # MODULE 12/13 - Azure OpenAI (TASK-AOI-01). The agent-worker uses the chat
+      # deployment to generate agent output and the embedding deployment to embed
+      # the query for retrieval, so it needs the same AzureOpenAI config as the
+      # api/document-worker. Its AzureOpenAIOptions are validated on startup
+      # (ValidateOnStart), so omitting these makes the worker crash at launch.
+      AzureOpenAI__Endpoint: ${AZURE_OPENAI_ENDPOINT:-https://placeholder.openai.azure.com/}
+      AzureOpenAI__AuthMode: ${AZURE_OPENAI_AUTH_MODE:-entra}
+      AzureOpenAI__ApiKey: ${AZURE_OPENAI_API_KEY:-}
+      AzureOpenAI__ChatDeployment: ${AZURE_OPENAI_CHAT_DEPLOYMENT:-gpt-4o}
+      AzureOpenAI__EmbeddingDeployment: ${AZURE_OPENAI_EMBEDDING_DEPLOYMENT:-text-embedding-3-small}
+      AzureOpenAI__EmbeddingDimensions: ${AZURE_OPENAI_EMBEDDING_DIMENSIONS:-1536}
+      AzureOpenAI__MaxContextTokens: ${AZURE_OPENAI_MAX_CONTEXT_TOKENS:-128000}
+      AzureOpenAI__MaxOutputTokens: ${AZURE_OPENAI_MAX_OUTPUT_TOKENS:-4096}
+      AzureOpenAI__RequestTimeoutSeconds: ${AZURE_OPENAI_REQUEST_TIMEOUT_SECONDS:-60}
+      AzureOpenAI__MaxRetries: ${AZURE_OPENAI_MAX_RETRIES:-3}
+      AzureOpenAI__ChatDeploymentSupportsTemperature: ${AZURE_OPENAI_CHAT_SUPPORTS_TEMPERATURE:-true}
+      AzureOpenAI__ChatDeploymentSupportsMaxTokens: ${AZURE_OPENAI_CHAT_SUPPORTS_MAX_TOKENS:-true}
+      # TASK-SIG-03/04: separate OS process from the Api - relays events over
+      # HTTP to the Api's internal publish endpoint (see HttpRealtimeEventPublisher).
+      Realtime__ApiBaseUrl: ${REALTIME_API_BASE_URL:-http://api:8080}
+      Realtime__InternalToken: ${REALTIME_INTERNAL_TOKEN:-eka-realtime-local-dev-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: src/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    image: eka-frontend:local
+    restart: unless-stopped
+    networks:
+      - eka-network
+    ports:
+      - "${FRONTEND_HTTP_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_started

@@ -1,0 +1,27 @@
+%% Agent run flow — Enterprise Knowledge Agent
+%% Editable source mirrored in README.md. Signal text uses mid-tone gray so it
+%% stays legible on both GitHub light and dark backgrounds.
+%%{init: {"themeVariables": {"signalColor":"#6e7781","signalTextColor":"#6e7781","actorLineColor":"#8b949e"}}}%%
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant API as API
+    participant DB as Postgres
+    participant Q as SQS (agent-execution)
+    participant W as agent-worker
+    participant AI as Azure OpenAI
+
+    U->>API: POST /agents/{id}/runs (submit)
+    API->>DB: Snapshot agent config, create run + outbox row
+    API-->>U: 202 Accepted (run id)
+    API->>Q: Publish AgentExecution message (via outbox)
+    W->>Q: Receive message, claim run (lease + heartbeat)
+    Note over W: Stage: Retrieving
+    W->>AI: Embed query
+    W->>DB: Vector + hybrid search over chunks
+    Note over W: Stage: Generating
+    W->>AI: Chat completion (grounded prompt)
+    Note over W: Stage: Saving
+    W->>DB: Parse and validate citations, save output
+    W-->>API: Relay stage / progress
+    API-->>U: SignalR: run stage / completed

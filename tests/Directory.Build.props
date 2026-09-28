@@ -1,0 +1,15 @@
+<Project>
+
+  <!-- Import the repo-root Directory.Build.props first (MSBuild does not chain these automatically). -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..\'))" />
+
+  <!--
+    Test-project-only relaxations. xUnit convention favors descriptive,
+    underscore-separated test method names (e.g. Method_Scenario_Expected),
+    so CA1707 is disabled here rather than for the whole solution.
+  -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+</Project>

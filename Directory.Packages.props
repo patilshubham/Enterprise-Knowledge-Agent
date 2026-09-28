@@ -1,0 +1,91 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="OpenAI" Version="2.1.0" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="FluentAssertions" Version="6.12.1" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="Testcontainers" Version="3.10.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="3.10.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+    <!-- Pinned above Testcontainers' transitive default (2023.0.0) to remediate
+         GHSA-q939-rpr3-3284 (SSH.NET ScpClient path traversal, CVE-2026-48798). -->
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
+    <!-- TASK-TST-02: enforces modular-monolith layering/dependency-direction
+         rules (Domain/Shared have no upward dependencies, Application never
+         depends on Infrastructure/hosts, etc.) via reflection over the
+         compiled assemblies. -->
+    <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
+  </ItemGroup>
+  <ItemGroup Label="EF Core / Data">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageVersion Include="Pgvector" Version="0.3.2" />
+    <PackageVersion Include="Pgvector.EntityFrameworkCore" Version="0.3.0" />
+    <!-- Pinned above the transitive default to remediate multiple advisories
+         (e.g. GHSA-23rf-6693-g89p) surfaced by Microsoft.EntityFrameworkCore.Design. -->
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.11" />
+  </ItemGroup>
+  <ItemGroup Label="Authorization">
+    <!-- Used only by EnterpriseKnowledgeAgent.Application.Tests to build a
+         real ServiceProvider for other unit tests;
+         Sdk.Web projects (Api) already get the DI container transitively. -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.11" />
+  </ItemGroup>
+  <ItemGroup Label="AWS / LocalStack">
+    <PackageVersion Include="AWSSDK.S3" Version="3.7.415.5" />
+    <PackageVersion Include="AWSSDK.SQS" Version="3.7.400.87" />
+    <PackageVersion Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.301" />
+  </ItemGroup>
+  <ItemGroup Label="Azure OpenAI">
+    <PackageVersion Include="Azure.AI.OpenAI" Version="2.1.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.13.1" />
+  </ItemGroup>
+  <ItemGroup Label="Observability">
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
+    <!-- TASK-OBS-02: console exporter for local metrics inspection (no OTLP
+         collector required for local/dev, matching the ASDD's
+         "console/OTLP for local" guidance). Pinned to 1.17.0 (not 1.9.0)
+         because OpenTelemetry.Api < 1.15.3 has a known moderate-severity
+         DoS advisory (GHSA-g94r-2vxg-569j, excessive allocation parsing
+         baggage/B3/Jaeger propagation headers) that fails NU1902
+         (warnings-as-errors) restore. -->
+    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.17.0" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageVersion Include="Serilog.Enrichers.CorrelationId" Version="3.0.1" />
+  </ItemGroup>
+  <!-- TASK-PRC-03: GFM-capable Markdown parser used to build a
+       structure-preserving block model (headings/paragraphs/lists/tables/
+       code fences) with source offsets for chunking + citations. -->
+  <ItemGroup Label="Processing">
+    <PackageVersion Include="Markdig" Version="0.37.0" />
+  </ItemGroup>
+  <ItemGroup Label="Misc">
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.11" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+    <PackageVersion Include="FluentValidation" Version="11.11.0" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <!-- TASK-SIG-03/04: document-worker/agent-worker are plain Worker SDK
+         projects (not Sdk.Web), so AddHttpClient/IHttpClientFactory (used to
+         register HttpRealtimeEventPublisher) needs this explicit package -
+         Sdk.Web projects (Api) already get it transitively via the shared framework. -->
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <!-- Pinned above the transitive default to remediate GHSA-v5pm-xwqc-g5wc (stack-overflow DoS on circular schema refs). -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,43 @@
+%% System context — Enterprise Knowledge Agent
+%% Editable source mirrored in README.md. GitHub light/dark-safe styling:
+%% every subgraph has an explicit neutral style; edges connect real nodes.
+flowchart TD
+    User["User (browser)"]
+
+    subgraph Client["Client"]
+        SPA["React SPA<br/>(nginx, port 8080)"]
+    end
+
+    subgraph Backend["Application backend"]
+        API["ASP.NET Core API<br/>+ SignalR hub"]
+        DOC["document-worker"]
+        AGT["agent-worker"]
+    end
+
+    subgraph Data["State & messaging"]
+        PG[("PostgreSQL<br/>+ pgvector")]
+        S3[("LocalStack S3")]
+        SQS[["LocalStack SQS"]]
+    end
+
+    AOAI["Azure OpenAI<br/>(chat + embeddings)"]
+
+    User --> SPA
+    SPA -->|"/api, /hubs"| API
+    API --> PG
+    API --> S3
+    API --> SQS
+    API -.->|SignalR| SPA
+    SQS --> DOC
+    SQS --> AGT
+    DOC --> PG
+    DOC --> S3
+    DOC --> AOAI
+    AGT --> PG
+    AGT --> AOAI
+    DOC -.->|progress relay| API
+    AGT -.->|progress relay| API
+
+    style Client fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px
+    style Backend fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px
+    style Data fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px

@@ -1,0 +1,40 @@
+%% Navigation map — Enterprise Knowledge Agent (user manual)
+%% Editable source mirrored in docs/user-manual.md. Two sidebar groups.
+flowchart TD
+    Root["Sidebar"]
+
+    subgraph Platform["PLATFORM group"]
+        P1["Dashboard"]
+        P2["Applications"]
+        P3["Processing"]
+        P4["Audit"]
+        P5["Operations"]
+    end
+
+    subgraph App["CURRENT APPLICATION group (after opening an app)"]
+        A1["Overview"]
+        A2["Chat"]
+        A3["Knowledge"]
+        A4["Processing"]
+        A5["Agents"]
+        A6["Runs"]
+        A7["Outputs"]
+        A8["Activity"]
+    end
+
+    Root --> P1
+    Root --> P2
+    Root --> P3
+    Root --> P4
+    Root --> P5
+    P2 -->|"open an application"| A1
+    A1 --> A2
+    A1 --> A3
+    A3 --> A4
+    A1 --> A5
+    A5 --> A6
+    A6 --> A7
+    A1 --> A8
+
+    style Platform fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px
+    style App fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px

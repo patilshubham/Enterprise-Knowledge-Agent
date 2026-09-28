@@ -1,0 +1,24 @@
+# Docker build context ignore rules for backend (.NET) image builds.
+# Build context is the repository root so cross-project references
+# (Shared/Domain/Application/Infrastructure) are available to COPY.
+
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/node_modules
+**/*.user
+
+# Never bake local secrets into an image.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Frontend, docs, and non-backend assets are irrelevant to backend image builds.
+src/frontend
+docs
+deploy
+tests
+*.md

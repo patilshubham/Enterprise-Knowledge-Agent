@@ -1,0 +1,6 @@
+@EnterpriseKnowledgeAgent.Api_HostAddress = http://localhost:5207
+
+GET {{EnterpriseKnowledgeAgent.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

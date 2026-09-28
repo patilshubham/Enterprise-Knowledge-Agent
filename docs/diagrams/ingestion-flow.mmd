@@ -1,0 +1,26 @@
+%% Knowledge ingestion flow — Enterprise Knowledge Agent
+%% Editable source mirrored in README.md. Signal text uses mid-tone gray so it
+%% stays legible on both GitHub light and dark backgrounds.
+%%{init: {"themeVariables": {"signalColor":"#6e7781","signalTextColor":"#6e7781","actorLineColor":"#8b949e"}}}%%
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant API as API
+    participant DB as Postgres
+    participant OB as Outbox publisher
+    participant Q as SQS (document-processing)
+    participant W as document-worker
+    participant S3 as S3
+    participant AI as Azure OpenAI
+
+    U->>API: POST /files (upload .txt/.md)
+    API->>S3: Store raw file (server-generated key)
+    API->>DB: Insert file + job + outbox row (one transaction)
+    OB->>Q: Publish DocumentProcessing message
+    W->>Q: Receive message, claim job (lease + heartbeat)
+    W->>S3: Fetch raw file
+    W->>W: Parse (Markdig) then chunk (token-aware)
+    W->>AI: Request embeddings (batched)
+    W->>DB: Persist chunks as vectors, mark job Succeeded
+    W-->>API: Relay progress (internal endpoint)
+    API-->>U: SignalR: file stage / completed

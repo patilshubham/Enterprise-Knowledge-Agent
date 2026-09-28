@@ -1,0 +1,17 @@
+%% Error and recovery flow — Enterprise Knowledge Agent (user manual)
+%% Editable source mirrored in docs/user-manual.md.
+flowchart TD
+    Start["Perform an action<br/>(upload, run, save…)"] --> Q{"Succeeded?"}
+    Q -->|Yes| Ok["Success toast +<br/>updated status"]
+    Q -->|"No — validation"| V["Fix the highlighted<br/>field, resubmit"]
+    Q -->|"No — permission/state"| S["Read the message;<br/>check app is Active"]
+    Q -->|"No — processing failed"| F{"Retry eligible?"}
+    V --> Start
+    S --> Start
+    F -->|Yes| R["Use Retry /<br/>Reprocess / Regenerate"]
+    F -->|No| Fix["Adjust inputs<br/>then start again"]
+    R --> Start
+    Fix --> Start
+
+    style Q fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px
+    style F fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px

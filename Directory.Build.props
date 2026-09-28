@@ -1,0 +1,24 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+    <!-- CA1716: "Shared" (and similarly named layer namespaces) conflicting with reserved
+         keywords in other .NET languages is not a real concern for this pure-C# solution. -->
+    <!-- CA1711: flags names ending in generic-collection-like suffixes (e.g. "Queue",
+         "Producer") as if they implied implementing that collection/pattern type. Our
+         IMessageQueue/IDocumentProcessingProducer-style names (TASK-SQS-01/02) are
+         intentional domain vocabulary, not a claim of implementing System.Collections. -->
+    <NoWarn>$(NoWarn);CA1716;CA1711</NoWarn>
+  </PropertyGroup>
+
+</Project>

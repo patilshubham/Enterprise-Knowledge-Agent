@@ -1,0 +1,16 @@
+%% Knowledge file status lifecycle — Enterprise Knowledge Agent (user manual)
+%% Editable source mirrored in docs/user-manual.md.
+stateDiagram-v2
+    [*] --> Queued: upload accepted
+    Queued --> Processing: worker claims job
+    Processing --> Ready: chunks embedded and indexed
+    Processing --> Failed: processing error
+    Failed --> Queued: Reprocess
+    Ready --> Queued: Reprocess
+    Ready --> Disabled: Disable
+    Disabled --> Ready: Enable
+    Ready --> Deleting: Delete
+    Disabled --> Deleting: Delete
+    Failed --> Deleting: Delete
+    Deleting --> Deleted: cleanup complete
+    Deleted --> [*]

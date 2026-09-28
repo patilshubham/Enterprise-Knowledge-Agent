@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\shared\EnterpriseKnowledgeAgent.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- TASK-PG-02: KnowledgeChunk.Embedding is a Pgvector.Vector value; the
+         domain project references the plain data-type package only (no EF
+         Core dependency here - that's Pgvector.EntityFrameworkCore, referenced
+         by Infrastructure for the actual column mapping). -->
+    <PackageReference Include="Pgvector" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,34 @@
+%% Trust boundaries — Enterprise Knowledge Agent
+%% Editable source mirrored in README.md. NOTE: the current build has no
+%% end-user authentication; all API calls run as a single "local-user" actor.
+%% The one enforced secret boundary is the internal worker → API relay token.
+flowchart TD
+    User["User (browser)"]
+
+    subgraph Edge["Edge (nginx, port 8080)"]
+        SPA["React SPA + strict CSP"]
+    end
+
+    subgraph Trusted["Trusted internal network (eka-network)"]
+        API["API (no end-user auth)<br/>security headers, Problem Details"]
+        DOC["document-worker"]
+        AGT["agent-worker"]
+        PG[("Postgres")]
+        LS[("LocalStack S3 + SQS")]
+    end
+
+    AOAI["Azure OpenAI<br/>(Entra ID or API key)"]
+
+    User -->|HTTP| SPA
+    SPA -->|same-origin proxy| API
+    DOC -->|X-Internal-Token shared secret| API
+    AGT -->|X-Internal-Token shared secret| API
+    API --> PG
+    API --> LS
+    DOC --> LS
+    AGT --> LS
+    DOC -->|key or Entra ID| AOAI
+    AGT -->|key or Entra ID| AOAI
+
+    style Edge fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px
+    style Trusted fill:#f6f8fa,stroke:#d0d7de,color:#57606a,stroke-width:1px

@@ -1,0 +1,35 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/agent-worker/">
+    <Project Path="src/agent-worker/EnterpriseKnowledgeAgent.AgentWorker.csproj" />
+  </Folder>
+  <Folder Name="/src/api/">
+    <Project Path="src/api/EnterpriseKnowledgeAgent.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/application/">
+    <Project Path="src/application/EnterpriseKnowledgeAgent.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/document-worker/">
+    <Project Path="src/document-worker/EnterpriseKnowledgeAgent.DocumentWorker.csproj" />
+  </Folder>
+  <Folder Name="/src/domain/">
+    <Project Path="src/domain/EnterpriseKnowledgeAgent.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/infrastructure/">
+    <Project Path="src/infrastructure/EnterpriseKnowledgeAgent.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/shared/">
+    <Project Path="src/shared/EnterpriseKnowledgeAgent.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/integration/">
+    <Project Path="tests/integration/EnterpriseKnowledgeAgent.Infrastructure.IntegrationTests/EnterpriseKnowledgeAgent.Infrastructure.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/unit/">
+    <Project Path="tests/unit/EnterpriseKnowledgeAgent.Api.Tests/EnterpriseKnowledgeAgent.Api.Tests.csproj" />
+    <Project Path="tests/unit/EnterpriseKnowledgeAgent.Application.Tests/EnterpriseKnowledgeAgent.Application.Tests.csproj" />
+    <Project Path="tests/unit/EnterpriseKnowledgeAgent.Architecture.Tests/EnterpriseKnowledgeAgent.Architecture.Tests.csproj" />
+    <Project Path="tests/unit/EnterpriseKnowledgeAgent.Domain.Tests/EnterpriseKnowledgeAgent.Domain.Tests.csproj" />
+    <Project Path="tests/unit/EnterpriseKnowledgeAgent.Shared.Tests/EnterpriseKnowledgeAgent.Shared.Tests.csproj" />
+  </Folder>
+</Solution>

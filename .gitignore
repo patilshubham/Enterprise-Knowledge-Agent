@@ -1,0 +1,58 @@
+# ---- Secrets (never commit) ----
+.env
+.env.*
+!.env.example
+*.user
+appsettings.*.Local.json
+appsettings.Local.json
+**/secrets.json
+*.pfx
+*.key
+*.pem
+
+# ---- .NET ----
+bin/
+obj/
+out/
+*.dll
+*.pdb
+*.user
+*.userosscache
+*.suo
+.vs/
+[Dd]ebug/
+[Rr]elease/
+publish/
+*.nupkg
+*.snupkg
+TestResults/
+coverage/
+
+# ---- Postgres backups (TASK-PG-05) / local Data Protection keys (TASK-IDN-01) ----
+deploy/postgres/backups/
+src/api/.dataprotection-keys/
+
+# ---- Node / Frontend ----
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Docker / Data volumes ----
+**/postgres-data/
+**/localstack-data/
+
+# ---- Editors / OS ----
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- Test / tooling artifacts ----
+.playwright-mcp/

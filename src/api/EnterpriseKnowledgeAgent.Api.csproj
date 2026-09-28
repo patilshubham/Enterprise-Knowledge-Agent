@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <!-- TASK-OBS-02: metrics SDK + ASP.NET Core/HttpClient auto-instrumentation. -->
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+    <!-- Required so `dotnet ef` (run with startup project src/api) can
+         discover and build the Infrastructure DbContext at design time. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\application\EnterpriseKnowledgeAgent.Application.csproj" />
+    <ProjectReference Include="..\domain\EnterpriseKnowledgeAgent.Domain.csproj" />
+    <ProjectReference Include="..\infrastructure\EnterpriseKnowledgeAgent.Infrastructure.csproj" />
+    <ProjectReference Include="..\shared\EnterpriseKnowledgeAgent.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

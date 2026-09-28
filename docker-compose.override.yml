@@ -1,0 +1,41 @@
+# Auto-merged by plain `docker compose up` (no -f flags needed). Adds the
+# "diagnostics" profile, which is OFF by default so Postgres/LocalStack stay
+# unreachable from the host unless explicitly requested:
+#
+#   docker compose --profile diagnostics up -d
+#
+# Postgres/LocalStack themselves must stay profile-less (unprofiled) because
+# api/document-worker/agent-worker depend on them unconditionally - Compose
+# fails the whole project if an unprofiled service depends_on a profiled one.
+# Docker also rejects combining `network_mode: service:<x>` with a container's
+# own `ports:` ("conflicting options: port publishing and the container type
+# network mode"), so a shared-netns sidecar can't publish ports either.
+# Instead, each gets its own ordinary sidecar container (its own network
+# namespace, on the same bridge network) that TCP-forwards to the real
+# service via `socat`; only the sidecar - not Postgres/LocalStack itself - is
+# profile-gated.
+
+services:
+  postgres-diagnostics:
+    image: alpine:3.20
+    command: ["sh", "-c", "apk add --no-cache socat && exec socat TCP-LISTEN:5432,fork,reuseaddr TCP:postgres:5432"]
+    networks:
+      - eka-network
+    profiles: ["diagnostics"]
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  localstack-diagnostics:
+    image: alpine:3.20
+    command: ["sh", "-c", "apk add --no-cache socat && exec socat TCP-LISTEN:4566,fork,reuseaddr TCP:localstack:4566"]
+    networks:
+      - eka-network
+    profiles: ["diagnostics"]
+    ports:
+      - "${LOCALSTACK_HOST_PORT:-4566}:4566"
+    depends_on:
+      localstack:
+        condition: service_healthy
